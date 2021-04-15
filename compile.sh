@@ -1,0 +1,1 @@
+gcc -Wall -pthread -g server.c -o server
