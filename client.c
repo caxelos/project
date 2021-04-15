@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <sched.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 int client_endpoint;
@@ -67,7 +68,8 @@ int main(int argc, char *argv[]) {
 	/*
 	 * MAIN FUNCTION
 	 */
-    char packet[200];
+
+    int i,nbytes;
 	printf("Welcome to the app.\n");
 	while (1) {
 		printf("Please enter command: ");
@@ -75,15 +77,33 @@ int main(int argc, char *argv[]) {
 		if (parse_command(cmd) == -1)
 			continue;
 
-		sprintf(packet, "echo \"%s\" >  %s",cmd, argv[1]);
-		printf("executing: %s\n", packet);		
-		system(packet);//sendRequest(cmd);
-		
-		//getReply(reqBuffer, &req);
-		break;
+	
 
+	//code 1	
+		for (i = 0; i < strlen(cmd); i++) {
+			nbytes = write(client_endpoint,cmd+i,sizeof(char));
+			if (nbytes == -1)
+				printf("problem at write");
+		}
+		nbytes = write(client_endpoint,"\n",sizeof(char));
+	//code 2
+	// char packet[200];
+	// sprintf(packet, "echo \"%s\" >  %s",cmd, argv[1]);
+	// printf("executing: %s\n", packet);		
+	// system(packet);//sendRequest(cmd);
+
+
+	// 		//sched_yield();
+    
 
 	}
 
+
+		
+		//getReply(reqBuffer, &req);
+		
+
+
+	
 	return 0;
 }

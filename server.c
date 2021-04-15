@@ -109,10 +109,9 @@ void *Receiver(){
 	while (1) {
 		i = 0;
 		while (1) {
-			printf("before read\n");
 			nbytes = read(server_endpoint, buff+i, sizeof(char) );
-			printf("after read. Readed: %c\n",buff[i]);
 			if (nbytes==0) {
+				SIGNAL=0;
 				sched_yield();
 				printf("yield processor...\n");
 				continue;
@@ -126,6 +125,7 @@ void *Receiver(){
     			buff[i]='\0';
     			printf("MESSAGE RECEIVED: %s\n",buff);
     			SIGNAL=1;
+    			break;
     		}
     	
 
@@ -200,11 +200,11 @@ int main(int argc, char *argv[]) {
 	 */
 	while (1) {
 		if (SIGNAL==1) {
+			SIGNAL=0;
 			//getRequest(reqBuffer, &req);
 			//makeCalc(&req);
 			printf("Got command: %s\n", buff);
 			//system("echo \"it's alright\" > %s", argv[1]);//sendReply(argv[1]);
-			break;
 		}
 		else {
 			sched_yield();

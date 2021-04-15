@@ -34,3 +34,42 @@ Processing '/etc/joe/joerc'...
 Processing '/etc/joe/ftyperc'...
 Finished processing /etc/joe/ftyperc
 Finished processing /etc/joe/joerc
+
+*** These modified files were found in JOE when it aborted on Thu Apr 15 21:31:56 2021
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+ttyS0
+/dev/ttyS0
+/dev/ttySO
+server.c
+server.c
+server.c
+compCl.sh
+
+*** File '* Startup Log *'
+Processing '/etc/joe/joerc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/joerc
+
+*** These modified files were found in JOE when it aborted on Thu Apr 15 21:32:18 2021
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+server.c
+compile.sh
+compile.sh
+compile.sh
+compile.sh
+server.c
+server.c
+compile.sh
+pts.sh
+pts.sh
+
+*** File '* Startup Log *'
+Processing '/etc/joe/joerc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/joerc
