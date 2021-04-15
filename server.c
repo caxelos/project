@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <stdlib.h>
 #include <sched.h>
 
 #define WAIT 1
@@ -18,7 +19,7 @@ struct reqbuff {
 typedef struct reqbuff buffT;
 
 
-int server_endpoint;
+volatile int server_endpoint;
 
 /* Sender thread
 
@@ -76,6 +77,8 @@ void sendReply(buffT *reqBuffer, buffT *req) {
 	MUTEX:
 		save answer at reqbuff and mark as FREE
 	*/
+
+
 	return;
 }
 
@@ -84,6 +87,10 @@ void *Sender() {
 
 	return NULL; 
 }
+
+
+char buff[100];
+int SIGNAL=0; 
 
 void *Receiver(){
 
@@ -97,22 +104,27 @@ void *Receiver(){
 	  	- save them: [reqid, data, status=WAIT]
 
 */
-	char buff[100];
-	int bytesRead;
+	
+	int i,nbytes;
 	while (1) {
-		bytesRead = read(server_endpoint, buff, sizeof(char) );
-    	
-    	if (bytesRead == 0) {
-    		sched_yield();
-    	}
-    	else if (bytesRead == -1)  {
-    		printf("Read error at writer() function.Exiting\n");
-    		return NULL;
-    	}
-    	else {
-    		printf("Reading data from /dev/ttyS0: %s\n",buff);
-    	} 
+		i = 0;
+		while (1) {
+			printf("popa\n");
+			nbytes = read(server_endpoint, buff+i, sizeof(char) );
+			if (nbytes==0) {
+				buff[i] = '\0';
+				SIGNAL=1;
+				printf("MESSAGE RECEIVED: %s\n",buff);
+				break;
+			}
+			else if (nbytes == -1)  {
+				printf("Read error at writer() function.Exiting\n");
+				return NULL;
+    		}
 
+			i++; 
+			//sched_yield();
+    	}
 
 	}
 
@@ -122,10 +134,10 @@ void *Receiver(){
 
 int main(int argc, char *argv[]) {
 
-	buffT req, reqBuffer[MAX_SIZE];//	buf 20 eggrafwn
+	//buffT req, reqBuffer[MAX_SIZE];//	buf 20 eggrafwn
 	 
 	pthread_t S_tid, R_tid;
-	int  i;
+	//int  i;
 
 	/* TODO
 	- have in mind to put mutexes while accessing request file
@@ -146,21 +158,23 @@ int main(int argc, char *argv[]) {
    }
 
 
-    //init reqBuffer
-   for (i=0; i < MAX_SIZE; i++) {
-   	reqBuffer[i].status=FREE;
-   	reqBuffer[i].data=NULL;
-   }
+   //  //init reqBuffer
+   // for (i=0; i < MAX_SIZE; i++) {
+   // 	reqBuffer[i].status=FREE;
+   // 	reqBuffer[i].data=NULL;
+   // }
 
 
 
+   	/*
+   	 * THREADS
+   	 */
 
 	//Create sender's thread
 	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
 		return -1;
 	}
-
 	//Create Receiver's thread
 	if (pthread_create( &R_tid,NULL, (void *)Receiver, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
@@ -168,14 +182,25 @@ int main(int argc, char *argv[]) {
 	}
 
 
+
+
+
+
+
 	/*
 	 * MAIN FUNCTION
 	 */
 	while (1) {
-		getRequest(reqBuffer, &req);
-		makeCalc(&req);
-		sendReply(reqBuffer, &req);
-		break;
+		if (SIGNAL==1) {
+			//getRequest(reqBuffer, &req);
+			//makeCalc(&req);
+			printf("Got command: %s\n", buff);
+			//system("echo \"it's alright\" > %s", argv[1]);//sendReply(argv[1]);
+			break;
+		}
+		else {
+			sched_yield();
+		}
 	}
 
 
