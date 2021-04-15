@@ -24,30 +24,48 @@
 
 
 void *getRequest(void) {
+	/*
+	MUTEX:
+		for each reqbuff:
+			if reqbuff is WAIT:
+				return [reqid,data]
+
+	*/	
 
 }
 
 void *makeCalc(void) {
+	/*
+	- do the thing...
+	- ret 
+	*/
 
 }
 
 void *sendReply(void) {
+	/*
+	MUTEX:
+		save answer at reqbuff and mark as FREE
+	*/
 	
 }
 
 int main(int argc, char *argv[]) {
 
 
-
 	/*
-	- CREATE STATUSES: [FREE, WAIT, DONE].
+	- CREATE STATUSES: [FREE, WAIT].
+	- CREATE REQBUFF 20 eggrafwn. struct:{int reqid,int status,char *data} 
 
 	- Create Threads "Sender" and "Receiver"
 
 	- Create /dev/ttyS0 file, give permissions
 	- have in mind to put mutexes while accessing request file
 	
-	- callfunctions getRequest(), makeCalc() and sendReply()
+	while True:
+		[id,data] = getRequest()
+		ans=makeCalc(data)
+		sendReply([id,ans])
 
 	*/
 
