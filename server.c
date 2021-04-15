@@ -109,18 +109,26 @@ void *Receiver(){
 	while (1) {
 		i = 0;
 		while (1) {
-			printf("popa\n");
+			printf("before read\n");
 			nbytes = read(server_endpoint, buff+i, sizeof(char) );
+			printf("after read. Readed: %c\n",buff[i]);
 			if (nbytes==0) {
-				buff[i] = '\0';
-				SIGNAL=1;
-				printf("MESSAGE RECEIVED: %s\n",buff);
-				break;
+				sched_yield();
+				printf("yield processor...\n");
+				continue;
 			}
 			else if (nbytes == -1)  {
 				printf("Read error at writer() function.Exiting\n");
 				return NULL;
     		}
+
+    		if (buff[i]=='\n') {
+    			buff[i]='\0';
+    			printf("MESSAGE RECEIVED: %s\n",buff);
+    			SIGNAL=1;
+    		}
+    	
+
 
 			i++; 
 			//sched_yield();
