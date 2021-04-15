@@ -1,0 +1,18 @@
+
+*** These modified files were found in JOE when it aborted on Thu Apr 15 18:04:24 2021
+*** JOE was aborted by UNIX signal 1
+
+*** File '(Unnamed)'
+ttyS0
+/dev/ttyS0
+/dev/ttySO
+server.c
+server.c
+server.c
+compCl.sh
+
+*** File '* Startup Log *'
+Processing '/etc/joe/joerc'...
+Processing '/etc/joe/ftyperc'...
+Finished processing /etc/joe/ftyperc
+Finished processing /etc/joe/joerc
