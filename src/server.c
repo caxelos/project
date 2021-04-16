@@ -171,8 +171,6 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 		//printf("*** Input error: Commands must begin with keywork \"AT+\"\n");
 	}
 	
-
-
 	if (buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G') {
 		strcpy(ans,"InvalidInput");
 		return ans;
@@ -212,20 +210,19 @@ int parseArgs( parserT *parser, int argc, char *argv[]) {
 	parser->endpoint=NULL;
 
 	//overwrite if needed
-	for (i=0; i < argc; i++) {
+	for (i=1; i < argc; i++) {
 		if (argv[i][0] == '-') {
-			if (strcmp(argv[i],"nregs") == 0) {
+			if (strcmp(argv[i],"-nregs") == 0) {
 				i++;
 				parser->nregs=atoi(argv[i]);
 			}
-			else if (strcmp(argv[i],"endpoint") == 0) {
+			else if (strcmp(argv[i],"-endpoint") == 0) {
 				i++;
 				parser->endpoint=argv[i];
-			
 			}
 		}
 		else {
-			printf("Error: Arguments missing or should start with \"-\" character.Type help to see the supported commands. \n");
+			printf("Error: Wrong argument or argument missing or should start with \"-\" character.Type help to see the supported commands. \n");
 			return -1;
 		}
 	}
@@ -304,13 +301,12 @@ int main(int argc, char *argv[]) {
 
 	int *regs = (int *)malloc( parser.nregs*sizeof(int) );
 	for (i=0; i < parser.nregs; i++) {
-		regs[i]=0;
+		regs[i]= rand()%10;
 	}
 
 	/*
 	 * MAIN FUNCTION
 	 */
-	printf("ola oook\n");
 	while (1) {
 		if (SIGNAL==1) {
 			SIGNAL=0;
