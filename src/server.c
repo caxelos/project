@@ -83,70 +83,82 @@ void *Receiver(){
 
 
 
-// int check_validity(char *cmd) {
+char *parseCommand(int *nregs, int *regs, char *ans) {
+	int i, num,num_tmp;
+	char tmp2[10];
 
 
-// 	return 0;
-// }
-
-
-char *parseCommand(int nregs, int *regs, char *ans) {
-	int i, num,num2;
-	char tmp[2]="\0", tmp2[10];
-
-
-
-	//do some basic validity check
-	if (buff[0] != 'A' || buff[1] != 'T' || buff[2] != '+') {
-		strcpy(ans,"InvalidInput");
+	if (strcmp(buff,"add-register")==0) {
+		*nregs = *nregs + 1;
+		regs = (int *)realloc(regs, (*nregs)  *sizeof(int));
+		if (regs == NULL) {
+			printf("Error allocating memory. Exiting\n");
+			exit(-1);
+		}
+		regs[*nregs-1] = rand()%10;
+		sprintf(ans,"\"REG%d\" added in registers. Total registers:%d", *nregs, *nregs);
 		return ans;
-		//printf("*** Input error: Commands must begin with keywork \"AT+\"\n");
 	}
-	
-	if (buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G') {
-		strcpy(ans,"InvalidInput");//"*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n";
+
+	/*
+	 *do some basic validity check
+	 */
+	if (buff[0] != 'A' || buff[1] != 'T' || buff[2] != '+') {
+		sprintf(ans,"InvalidInput");//printf("*** Input error: Commands must begin with keywork \"AT+\"\n");
 		return ans;
 		
 	}
+	
+	/*
+	 *all valid commands start with "REG"
+	 */
+	if (buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G') {
+		sprintf(ans,"InvalidInput");
+		return ans;
+	}
+	num=atoi(buff+6);
+	if ( num == 0) {
+		sprintf(ans,"InvalidInput");
+		return ans;
+	}
     else {
+    	i=6;
+    	num_tmp=num;
+    	while (num_tmp != 0) {//find num of digits
+    		num_tmp /= 10;     
+    		i++;	
+    	}
 
-		i=6;
-		tmp[0]='\0';
-		while (isdigit(buff[i])) { //find multiple digits
-				tmp[i-6] = buff[i];
-				i++;
-		}
-		if (i>6) {
-			num = atoi( tmp );
-			if (buff[i]=='=') {
-				if (buff[i+1]=='?') {//2nd command
-					sprintf(ans,"0-16535");
-				}
-				else {
-					i++;
-					
-					//while (isdigit(buff[i])) { //find multiple digits
-					//	tmp[i-7] = buff[i];
-					//	i++;
-					//}
-					num2=atoi(buff+i);
-					sprintf(tmp2,"%d",num2);	
-					if ( strcmp(buff+i,tmp2)==0 ) {
-						regs[num]=num2;
-						sprintf(ans,"OK");
-					}
-					else {
-						sprintf(ans,"InvalidInput");
-						return ans;
-					}
-				}
+		if (buff[i]=='=') {
+			if (buff[i+1]=='?') {//2nd command
+				sprintf(ans,"0-16535");
 			}
 			else {
-				sprintf(ans,"%d",regs[num]);
+				i++;
+				num_tmp=atoi(buff+i);
+				sprintf(tmp2,"%d",num_tmp);	
+				if ( strcmp(buff+i,tmp2)==0 ) {
+					if (num > *nregs) {
+						sprintf(ans,"Error: Register numbers must be from \"1\" to \"%d\"", *nregs);
+						return ans;
+					}
+					regs[num-1]=num_tmp;
+					sprintf(ans,"OK");
+					return ans;
+				}
+				else {
+					sprintf(ans,"InvalidInput");
+					return ans;
+				}
 			}
 		}
+		else if (buff[i]=='\0' &&  (num <= *nregs) && (num > 0) ) {
+			sprintf(ans,"%d", regs[num-1]);
+			return ans;
+		}
 		else {//no digits found
-			sprintf(ans,"InvalidInput");			
+			sprintf(ans,"InvalidInput");
+			return ans;			
 		}
 		
 	}
@@ -247,7 +259,7 @@ int main(int argc, char *argv[]) {
 	int nbytes;
 	while (1) {
 		if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
-			parseCommand(parser.nregs, regs, ans);
+			parseCommand( &(parser.nregs), regs, ans);
 			// char packet[50];
 			// sprintf(packet, "echo \"%s\" >  %s",ans, parser.endpoint);
 			// system(packet);//sendRequest(cmd);
