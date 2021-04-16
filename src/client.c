@@ -8,10 +8,11 @@
 
 #define TRUE 1
 #define FALSE 0
+#define MSG_SIZE 100
 
-char ans[100]="\0";
-volatile int SIGNAL;
-
+//volatile char ANS_NONCACHED[MSG_SIZE]="\0";
+volatile char ans[MSG_SIZE]="\0";
+volatile int SIGNAL_READ_FROM_ENDPOINT=FALSE;
 
 void *Sender() {
 	return NULL;
@@ -33,30 +34,28 @@ void *Receiver(){
 */
 	
 	int i,nbytes;
-	
+	//char ans[MSG_SIZE];
+	i=0;
 	while (1) {
 		i = 0;
-		while (SIGNAL==FALSE) {
+		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
 			nbytes = read(client_endpoint, ans+i, sizeof(char) );
-			//if (nbytes==0) {
-			//	continue;
-			//}
 			if (nbytes == -1)  {
 				printf("Read error at writer() function.Exiting\n");
 				return NULL;
     		}
-
     		if (ans[i]=='\n') {
     			ans[i]='\0';
-    			SIGNAL=TRUE;
-    			break;
+    			printf("string \"%s\" is ready\n",ans);
+    			i=0;
+    			//strcpy(ANS_NONCACHED,(volatile char *)ans);
+    			SIGNAL_READ_FROM_ENDPOINT=FALSE;
     		}
-    	
-			i++; 	
-    	}
+    		else {
+    			i++;
+    		}
+    	}	
     	sched_yield();
-
-
 	}
 
 
@@ -100,30 +99,29 @@ int main(int argc, char *argv[]) {
 	 */
 
     int i,nbytes;
+    //char ans[100]="\0";
 	printf("Welcome to the app.\n");
 	while (1) {
 		printf("\n<--- Please enter command: ");
 		scanf("%s", cmd);
-		// if (check_validity(cmd) == -1)
-		// 	continue;
-
-	
-
-		//code 1	
 		for (i = 0; i < strlen(cmd); i++) {
 			nbytes = write(client_endpoint,cmd+i,sizeof(char));
-			if (nbytes == -1)
-				printf("problem at write");
+				if (nbytes == -1)
+					printf("problem at write");
 		}
 		nbytes = write(client_endpoint,"\n",sizeof(char));
+		SIGNAL_READ_FROM_ENDPOINT=TRUE;
+
 		while (1) {
-			if (SIGNAL==TRUE) {
+			if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
+				//printf("copying \"%s\" to \"%s\"\n",ANS_NONCACHED,ans);
+				//strcpy(ans,(char *)ANS_NONCACHED);
+
 				printf("---> Answer: %s\n",ans);
-				SIGNAL=FALSE;
 				break;
 			}
 			else {
-				sched_yield();
+				sched_yield();		
 			}
 		}
 	}

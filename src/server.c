@@ -32,6 +32,9 @@ typedef struct parser parserT;
 
 
 volatile int server_endpoint;
+volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE; 
+char buff[100]="\0";
+
 
 /* Sender thread
 
@@ -101,26 +104,14 @@ void *Sender() {
 }
 
 
-char buff[100]="\0";
-volatile int SIGNAL=FALSE; 
 
-void *Receiver(){
 
-/* Receiver thread
-	
-	while True:
-	  - wait until /dev/ttyS0 has data
-	  - unpack data:[reqid,data]
 
-	  MUTEX: 
-	  	- save them: [reqid, data, status=WAIT]
-
-*/
-	
+void *Receiver(){	
 	int i,nbytes;
 	while (1) {
 		i = 0;
-		while (SIGNAL==FALSE) {
+		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
 			nbytes = read(server_endpoint, buff+i, sizeof(char) );
 			if (nbytes == -1)  {
 				printf("Read error at writer() function.Exiting\n");
@@ -129,14 +120,12 @@ void *Receiver(){
     		if (buff[i]=='\n') {
     			buff[i]='\0';
     			printf("MESSAGE RECEIVED: %s\n",buff);
-    			SIGNAL=TRUE;
+    			SIGNAL_READ_FROM_ENDPOINT=FALSE;
     			break;
     		}
 			i++; 
     	}
     	sched_yield();
-
-
 	}
 
 
@@ -171,32 +160,43 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 		//printf("*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n");
 	}
     else {
+
 		i=6;
+		tmp[0]='\0';
 		while (isdigit(buff[i])) { //find multiple digits
 				tmp[i-6] = buff[i];
 				i++;
 		}
 		if (i>6) {
-
 			num = atoi( tmp );
-			
-			if (buff[i]=='=' && buff[i+1]=='?') {//2nd command
-				sprintf(ans,"0-16535");
+			if (buff[i]=='=') {
+				if (buff[i+1]=='?') {//2nd command
+					sprintf(ans,"0-16535");
+				}
+				else {
+					i=7;
+					while (isdigit(buff[i])) { //find multiple digits
+						tmp[i-7] = buff[i];
+						i++;
+					}
+					if (i>7) {
+						regs[num]=atoi(tmp);
+						sprintf(ans,"OK");
+					}
+					else {
+						sprintf(ans,"InvalidInput");
+						return ans;
+					}
+				}
 			}
 			else {
 				sprintf(ans,"%d",regs[num]);
 			}
-
 		}
 		else {//no digits found
-			printf("READ COMMAND\n");
-			
+			sprintf(ans,"InvalidInput");			
 		}
 		
-
-		
-	
-
 	}
 
 
@@ -263,26 +263,11 @@ int main(int argc, char *argv[]) {
 	/*
 	 * INITIALIZATIONS
 	 */
-	//Create /dev/ttyS0 file, give permissions
-	//argv[1] is the virtual port
 	server_endpoint = open( parser.endpoint, O_RDWR | O_CREAT, S_IRWXU );
 	if (server_endpoint == -1 )  {
 		printf("Error opening output file. Exiting\n");
 		return -1;
-   }
-
-
-
-
-
-   //  //init reqBuffer
-   // for (i=0; i < MAX_SIZE; i++) {
-   // 	reqBuffer[i].status=FREE;
-   // 	reqBuffer[i].data=NULL;
-   // }
-
-
-
+	}
    	/*
    	 * THREADS
    	 */
@@ -310,24 +295,18 @@ int main(int argc, char *argv[]) {
 	 */
 	int nbytes;
 	while (1) {
-		if (SIGNAL==TRUE) {
-			//getRequest(reqBuffer, &req);
-			//makeCalc(&req);
+		if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
 			parseCommand(parser.nregs, regs, ans);
-
-
-
 			// char packet[50];
 			// sprintf(packet, "echo \"%s\" >  %s",ans, parser.endpoint);
 			// system(packet);//sendRequest(cmd);
-
 			for (i = 0; i < strlen(ans); i++) {
 				nbytes = write(server_endpoint,ans+i,sizeof(char));
 				if (nbytes == -1)
 					printf("problem at write\n");
 			}
 			nbytes = write(server_endpoint,"\n",sizeof(char));
-			SIGNAL=FALSE;
+			SIGNAL_READ_FROM_ENDPOINT=TRUE;
 			
 		}
 		else {
