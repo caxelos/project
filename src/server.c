@@ -83,14 +83,14 @@ void *Receiver(){
 
 
 
-char *parseCommand(int *nregs, int *regs, char *ans) {
+char *parseCommand(int *nregs, unsigned short *regs, char *ans) {
 	int i, num,num_tmp;
 	char tmp2[10];
 
 
 	if (strcmp(buff,"add-register")==0) {
 		*nregs = *nregs + 1;
-		regs = (int *)realloc(regs, (*nregs)  *sizeof(int));
+		regs = (unsigned short*)realloc(regs, (*nregs)  *sizeof(unsigned short));
 		if (regs == NULL) {
 			printf("Error allocating memory. Exiting\n");
 			exit(-1);
@@ -131,7 +131,7 @@ char *parseCommand(int *nregs, int *regs, char *ans) {
 
 		if (buff[i]=='=') {
 			if (buff[i+1]=='?') {//2nd command
-				sprintf(ans,"0-16535");
+				sprintf(ans,"0-%hu",(unsigned short)-1);
 			}
 			else {
 				i++;
@@ -248,7 +248,7 @@ int main(int argc, char *argv[]) {
 
 
 
-	int *regs = (int *)malloc( parser.nregs*sizeof(int) );
+	unsigned short *regs = (unsigned short *)malloc( parser.nregs*sizeof(unsigned short) );
 	for (i=0; i < parser.nregs; i++) {
 		regs[i]= rand()%10;
 	}

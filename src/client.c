@@ -69,6 +69,16 @@ void send_request(char *cmd) {
 
 }
 
+void printATcommands(void) {
+	
+	printf("Available AT Commands:\n");
+	printf("1) REG1: Read the register-1 value -> Response: <int>.\n");
+	printf("2) REG1=?: Range of discrete values for register-1 (eg.0-%hu).\n",(unsigned short)-1);
+	printf("3) REG1=4: Store value \"4\" in register-1.\n");
+	printf("4) add-register: Add one more register in register's list.\n");
+
+
+}
 int main(int argc, char *argv[]) {
 	char cmd[100];
 	pthread_t R_tid;
@@ -79,6 +89,9 @@ int main(int argc, char *argv[]) {
 		printf("Error opening output file. Exiting\n");
 		return -1;
     }
+
+
+
 
  //    //Create sender's thread
 	// if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
@@ -101,8 +114,14 @@ int main(int argc, char *argv[]) {
     //char ans[100]="\0";
 	printf("Welcome to the app.\n");
 	while (1) {
-		printf("\n<--- Please enter command: ");
+		printf("~  ");//printf("\n<--- Please enter command: ");
 		scanf("%s", cmd);
+		if (strcmp(cmd,"help") == 0) {
+			printATcommands();
+			continue;
+		}
+
+
 		for (i = 0; i < strlen(cmd); i++) {
 			nbytes = write(client_endpoint,cmd+i,sizeof(char));
 				if (nbytes == -1)
@@ -116,7 +135,7 @@ int main(int argc, char *argv[]) {
 				//printf("copying \"%s\" to \"%s\"\n",ANS_NONCACHED,ans);
 				//strcpy(ans,(char *)ANS_NONCACHED);
 
-				printf("---> Answer: %s\n",ans);
+				printf("%s\n",ans);//printf("---> Answer: %s\n",ans);
 				break;
 			}
 			else {
