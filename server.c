@@ -4,12 +4,16 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <sched.h>
+#include <ctype.h>
+#include <string.h>
 
 #define WAIT 1
 #define FREE 0
 #define MAX_SIZE 20
 #define _UNIX03_SOURCE
 
+#define DISCRETE 0
+#define RANGE 1
 
 struct reqbuff {
 	int id;
@@ -17,6 +21,19 @@ struct reqbuff {
 	char *data;
 };
 typedef struct reqbuff buffT;
+
+
+
+union Data {
+	int integer;//discrete
+	char character;
+} data;
+
+struct reg {
+	union Data data;
+	int type;//discrete or range
+};
+typedef struct reg regT;
 
 
 volatile int server_endpoint;
@@ -89,7 +106,7 @@ void *Sender() {
 }
 
 
-char buff[100];
+char buff[100]="\0";
 int SIGNAL=0; 
 
 void *Receiver(){
@@ -109,11 +126,9 @@ void *Receiver(){
 	while (1) {
 		i = 0;
 		while (1) {
+
 			nbytes = read(server_endpoint, buff+i, sizeof(char) );
 			if (nbytes==0) {
-				SIGNAL=0;
-				sched_yield();
-				printf("yield processor...\n");
 				continue;
 			}
 			else if (nbytes == -1)  {
@@ -129,10 +144,10 @@ void *Receiver(){
     		}
     	
 
-
 			i++; 
 			//sched_yield();
     	}
+
 
 	}
 
@@ -140,12 +155,53 @@ void *Receiver(){
 	return NULL;
 }
 
+
+char *parseCommand(int nregs, regT *regs, char *ans) {
+	int i, num;
+	char tmp[2]="\0";
+    
+
+
+	if (buff[3]=='R' && buff[4]=='E' && buff[5]=='G' ) {
+		i=6;
+		while (isdigit(buff[i])) { //find multiple digits
+				tmp[i-6] = buff[i];
+				i++;
+		}
+		if (i>6) {
+			num = atoi( tmp );
+			if (regs[num].type == DISCRETE) 
+				sprintf(ans,"%d",regs[num].data.integer);
+			else
+				sprintf(ans,"%c",regs[num].data.character);
+
+		}
+		else {//no digits found
+			printf("READ COMMAND\n");
+			
+		}
+		
+
+		
+	
+
+	}
+
+
+	return ans;
+}
+
+
+
+
 int main(int argc, char *argv[]) {
 
 	//buffT req, reqBuffer[MAX_SIZE];//	buf 20 eggrafwn
+
 	 
 	pthread_t S_tid, R_tid;
-	//int  i;
+	int  i,nregs;
+	char ans[50];
 
 	/* TODO
 	- have in mind to put mutexes while accessing request file
@@ -166,6 +222,9 @@ int main(int argc, char *argv[]) {
    }
 
 
+
+
+
    //  //init reqBuffer
    // for (i=0; i < MAX_SIZE; i++) {
    // 	reqBuffer[i].status=FREE;
@@ -180,7 +239,6 @@ int main(int argc, char *argv[]) {
 
 	//Create sender's thread
 	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
-		printf("Error creating thread. Exiting\n");
 		return -1;
 	}
 	//Create Receiver's thread
@@ -192,8 +250,12 @@ int main(int argc, char *argv[]) {
 
 
 
-
-
+	nregs = atoi( argv[2] );
+	regT *regs = (regT *)malloc( nregs*sizeof(regT) );
+	for (i=0; i < nregs; i++) {
+		regs[i].data.integer=0;
+		regs[i].type=DISCRETE;
+	}
 
 	/*
 	 * MAIN FUNCTION
@@ -203,8 +265,13 @@ int main(int argc, char *argv[]) {
 			SIGNAL=0;
 			//getRequest(reqBuffer, &req);
 			//makeCalc(&req);
-			printf("Got command: %s\n", buff);
-			//system("echo \"it's alright\" > %s", argv[1]);//sendReply(argv[1]);
+			parseCommand(nregs, regs, ans);
+			printf("ans:%s\n",ans);
+
+			char packet[50];
+			sprintf(packet, "echo \"%s\" >  %s",ans, argv[1]);
+			system(packet);//sendRequest(cmd);
+			
 		}
 		else {
 			sched_yield();
@@ -219,5 +286,7 @@ int main(int argc, char *argv[]) {
 		printf("error closing server endpoint. Exiting\n");
 		return -1;
 	}
+
+	free( regs );
 	return 0;
 }

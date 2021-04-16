@@ -1,1 +1,1 @@
-gcc -Wall -g client.c -o client
+gcc -Wall -g client.c -o client -pthread
