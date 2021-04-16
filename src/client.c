@@ -46,7 +46,6 @@ void *Receiver(){
     		}
     		if (ans[i]=='\n') {
     			ans[i]='\0';
-    			printf("string \"%s\" is ready\n",ans);
     			i=0;
     			//strcpy(ANS_NONCACHED,(volatile char *)ans);
     			SIGNAL_READ_FROM_ENDPOINT=FALSE;

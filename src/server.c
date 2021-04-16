@@ -33,67 +33,16 @@ typedef struct parser parserT;
 
 volatile int server_endpoint;
 volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE; 
-char buff[100]="\0";
-
-
-/* Sender thread
-
-	while True:
-		MUTEX:
-			for each status:
-				if status==DONE:
-					- Pack and Send [reqid,Result] (write to /dev/ttyS0)
-					- Make status FREE 
-
-*/
-
-
-
-
+volatile char buff[100]="\0";
 
 
 void getRequest(buffT *reqBuffer, buffT *req) {
-	/*
-	MUTEX:
-		for each reqbuff:
-			if reqbuff is WAIT:
-				return [reqid,data]
-
-	*/	
-	static int i=0;
-	while (1) {
-		if (reqBuffer[i].status==WAIT) {
-			req=reqBuffer;
-			break;
-		}
-
-		i = (i+1)%MAX_SIZE;
-	}
-
 	return;
 }
 
-void makeCalc(buffT *req) {
-	//req.data contains the command
-	printf("executed command is:%s\n", req->data);
-
-
-
-	/*
-	- do the thing...
-	- ret 
-	*/
-
-	return;
-}
 
 void sendReply(buffT *reqBuffer, buffT *req) {
-	/*
-	MUTEX:
-		save answer at reqbuff and mark as FREE
-	*/
-
-
+	
 	return;
 }
 
@@ -174,7 +123,7 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 					sprintf(ans,"0-16535");
 				}
 				else {
-					i=7;
+					i++;
 					while (isdigit(buff[i])) { //find multiple digits
 						tmp[i-7] = buff[i];
 						i++;
