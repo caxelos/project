@@ -11,23 +11,6 @@
 char ans[100]="\0";
 int SIGNAL;
 
-int check_validity(char *cmd) {
-	if (cmd[0] != 'A' || cmd [1] != 'T' || cmd[2] != '+') {
-		printf("*** Input error: Commands must begin with keywork \"AT+\"\n");
-		return -1;
-	}
-	if (cmd[3] != 'R' || cmd [4] != 'E' || cmd[5] != 'G') {
-		printf("*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n");
-		return -1;
-	}
-
-
-
-
-
-	return 0;
-}
-
 
 void *Sender() {
 	return NULL;
@@ -117,14 +100,14 @@ int main(int argc, char *argv[]) {
     int i,nbytes;
 	printf("Welcome to the app.\n");
 	while (1) {
-		printf("<--- Please enter command: ");
+		printf("\n<--- Please enter command: ");
 		scanf("%s", cmd);
-		if (check_validity(cmd) == -1)
-			continue;
+		// if (check_validity(cmd) == -1)
+		// 	continue;
 
 	
 
-	//code 1	
+		//code 1	
 		for (i = 0; i < strlen(cmd); i++) {
 			nbytes = write(client_endpoint,cmd+i,sizeof(char));
 			if (nbytes == -1)

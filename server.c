@@ -156,13 +156,35 @@ void *Receiver(){
 }
 
 
+
+// int check_validity(char *cmd) {
+
+
+// 	return 0;
+// }
+
+
 char *parseCommand(int nregs, regT *regs, char *ans) {
 	int i, num;
 	char tmp[2]="\0";
-    
 
 
-	if (buff[3]=='R' && buff[4]=='E' && buff[5]=='G' ) {
+
+	//do some basic validity check
+	if (buff[0] != 'A' || buff[1] != 'T' || buff[2] != '+') {
+		strcpy(ans,"InvalidInput");
+		return ans;
+		//printf("*** Input error: Commands must begin with keywork \"AT+\"\n");
+	}
+	
+
+
+	if (buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G') {
+		strcpy(ans,"InvalidInput");
+		return ans;
+		//printf("*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n");
+	}
+    else {
 		i=6;
 		while (isdigit(buff[i])) { //find multiple digits
 				tmp[i-6] = buff[i];
@@ -266,7 +288,6 @@ int main(int argc, char *argv[]) {
 			//getRequest(reqBuffer, &req);
 			//makeCalc(&req);
 			parseCommand(nregs, regs, ans);
-			printf("ans:%s\n",ans);
 
 			char packet[50];
 			sprintf(packet, "echo \"%s\" >  %s",ans, argv[1]);
