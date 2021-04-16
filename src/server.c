@@ -12,8 +12,8 @@
 #define MAX_SIZE 20
 #define _UNIX03_SOURCE
 
-#define DISCRETE 0
-#define RANGE 1
+#define TRUE 1
+#define FALSE 0
 
 struct reqbuff {
 	int id;
@@ -102,7 +102,7 @@ void *Sender() {
 
 
 char buff[100]="\0";
-int SIGNAL=0; 
+volatile int SIGNAL=FALSE; 
 
 void *Receiver(){
 
@@ -120,27 +120,21 @@ void *Receiver(){
 	int i,nbytes;
 	while (1) {
 		i = 0;
-		while (1) {
+		while (SIGNAL==FALSE) {
 			nbytes = read(server_endpoint, buff+i, sizeof(char) );
-			//if (nbytes==0) {
-			//	continue;
-			//}
 			if (nbytes == -1)  {
 				printf("Read error at writer() function.Exiting\n");
 				return NULL;
     		}
-
     		if (buff[i]=='\n') {
     			buff[i]='\0';
     			printf("MESSAGE RECEIVED: %s\n",buff);
-    			SIGNAL=1;
+    			SIGNAL=TRUE;
     			break;
     		}
-    	
-
 			i++; 
-			//sched_yield();
     	}
+    	sched_yield();
 
 
 	}
@@ -183,8 +177,15 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 				i++;
 		}
 		if (i>6) {
+
 			num = atoi( tmp );
-			sprintf(ans,"%d",regs[num]);
+			
+			if (buff[i]=='=' && buff[i+1]=='?') {//2nd command
+				sprintf(ans,"0-16535");
+			}
+			else {
+				sprintf(ans,"%d",regs[num]);
+			}
 
 		}
 		else {//no digits found
@@ -307,16 +308,26 @@ int main(int argc, char *argv[]) {
 	/*
 	 * MAIN FUNCTION
 	 */
+	int nbytes;
 	while (1) {
-		if (SIGNAL==1) {
-			SIGNAL=0;
+		if (SIGNAL==TRUE) {
 			//getRequest(reqBuffer, &req);
 			//makeCalc(&req);
 			parseCommand(parser.nregs, regs, ans);
 
-			char packet[50];
-			sprintf(packet, "echo \"%s\" >  %s",ans, parser.endpoint);
-			system(packet);//sendRequest(cmd);
+
+
+			// char packet[50];
+			// sprintf(packet, "echo \"%s\" >  %s",ans, parser.endpoint);
+			// system(packet);//sendRequest(cmd);
+
+			for (i = 0; i < strlen(ans); i++) {
+				nbytes = write(server_endpoint,ans+i,sizeof(char));
+				if (nbytes == -1)
+					printf("problem at write\n");
+			}
+			nbytes = write(server_endpoint,"\n",sizeof(char));
+			SIGNAL=FALSE;
 			
 		}
 		else {

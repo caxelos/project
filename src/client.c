@@ -6,10 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-
+#define TRUE 1
+#define FALSE 0
 
 char ans[100]="\0";
-int SIGNAL;
+volatile int SIGNAL;
 
 
 void *Sender() {
@@ -35,7 +36,7 @@ void *Receiver(){
 	
 	while (1) {
 		i = 0;
-		while (1) {
+		while (SIGNAL==FALSE) {
 			nbytes = read(client_endpoint, ans+i, sizeof(char) );
 			//if (nbytes==0) {
 			//	continue;
@@ -47,12 +48,13 @@ void *Receiver(){
 
     		if (ans[i]=='\n') {
     			ans[i]='\0';
-    			SIGNAL=1;
+    			SIGNAL=TRUE;
     			break;
     		}
     	
 			i++; 	
     	}
+    	sched_yield();
 
 
 	}
@@ -115,9 +117,9 @@ int main(int argc, char *argv[]) {
 		}
 		nbytes = write(client_endpoint,"\n",sizeof(char));
 		while (1) {
-			if (SIGNAL==1) {
+			if (SIGNAL==TRUE) {
 				printf("---> Answer: %s\n",ans);
-				SIGNAL=0;
+				SIGNAL=FALSE;
 				break;
 			}
 			else {
