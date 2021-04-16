@@ -91,8 +91,8 @@ void *Receiver(){
 
 
 char *parseCommand(int nregs, int *regs, char *ans) {
-	int i, num;
-	char tmp[2]="\0";
+	int i, num,num2;
+	char tmp[2]="\0", tmp2[10];
 
 
 
@@ -104,9 +104,9 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 	}
 	
 	if (buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G') {
-		strcpy(ans,"InvalidInput");
+		strcpy(ans,"InvalidInput");//"*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n";
 		return ans;
-		//printf("*** Input error: \"AT+\" must be followed by a register (eg. REG1)\n");
+		
 	}
     else {
 
@@ -124,12 +124,15 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 				}
 				else {
 					i++;
-					while (isdigit(buff[i])) { //find multiple digits
-						tmp[i-7] = buff[i];
-						i++;
-					}
-					if (i>7) {
-						regs[num]=atoi(tmp);
+					
+					//while (isdigit(buff[i])) { //find multiple digits
+					//	tmp[i-7] = buff[i];
+					//	i++;
+					//}
+					num2=atoi(buff+i);
+					sprintf(tmp2,"%d",num2);	
+					if ( strcmp(buff+i,tmp2)==0 ) {
+						regs[num]=num2;
 						sprintf(ans,"OK");
 					}
 					else {
@@ -154,6 +157,7 @@ char *parseCommand(int nregs, int *regs, char *ans) {
 
 int parseArgs( parserT *parser, int argc, char *argv[]) {
 	int i;
+
 
 	//initialize
 	parser->nregs=5;
@@ -191,9 +195,7 @@ int parseArgs( parserT *parser, int argc, char *argv[]) {
 
 int main(int argc, char *argv[]) {
 
-	//buffT req, reqBuffer[MAX_SIZE];//	buf 20 eggrafwn
-
-	 
+	//buffT req, reqBuffer[MAX_SIZE];//	buf 20 eggrafwn 
 	pthread_t S_tid, R_tid;
 	int  i;
 	char ans[50];
