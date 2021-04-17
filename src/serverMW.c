@@ -145,15 +145,15 @@ int initialize_server(parserT *parser) {
 	 * INITIALIZATIONS
 	 */
 
-	if (access(parser->endpoint, X_OK)==0) {
-		if (truncate(server_endpoint,0)==-1) {
-			printf("error clearing %s device. Exiting\n", parser->endpoint );
-			exit(-1);
-		}
-	}
+	// if (access(parser->endpoint, X_OK)==0) {
+	// 	if (truncate(parser->endpoint,0)==-1) {
+	// 		printf("error clearing %s device. Exiting\n", parser->endpoint );
+	// 		exit(-1);
+	// 	}
+	// }
 
 
-	server_endpoint = open( parser->endpoint, O_RDWR | O_CREAT, S_IRWXU );
+	server_endpoint = open( parser->endpoint, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU );
 	if (server_endpoint == -1 )  {
 		printf("Error opening output file. Exiting\n");
 		return -1;
@@ -185,36 +185,7 @@ int initialize_server(parserT *parser) {
 }
 
 
-int parseArgs( parserT *parser, int argc, char *argv[]) {
-	int i;
-	parser->nregs=5;
-	parser->endpoint=NULL;
 
-	//overwrite if needed
-	for (i=1; i < argc; i++) {
-		if (argv[i][0] == '-') {
-			if (strcmp(argv[i],"-nregs") == 0) {
-				i++;
-				parser->nregs=atoi(argv[i]);
-			}
-			else if (strcmp(argv[i],"-endpoint") == 0) {
-				i++;
-				parser->endpoint=argv[i];
-			}
-		}
-		else {
-			printf("Error: Wrong argument or argument missing or should start with \"-\" character.Type help to see the supported commands. \n");
-			return -1;
-		}
-	}
-
-	if (strcmp(parser->endpoint,"\0")==0) {
-		printf("Error. \"-endpoint\" argument missing (e.g. -endpoint /dev/pts1).\n");
-		return -1;
-	}
-
-	return 0;
-}
 
 
 int run_server(parserT *parser)  {

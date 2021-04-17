@@ -1,9 +1,15 @@
+/*
+ *
+ */
 #include <clientMW.h>
 
+int main(int argc, char *argv[]) {
+	parserT parser;
 
-int main(int argc, char *argv[]) { 
+	if (parseArgs(&parser, argc, argv) == -1)
+		return -1;
 
-	if (initialize_client(argv)==-1)
+	if (initialize_client(&parser)==-1)
 		return -1;
 
 	if (run_client()==-1)
