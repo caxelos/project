@@ -3,19 +3,37 @@
 
 
 /*
- * deviceFd: file descriptor of a /dev/pts device on server side.
- * 
+ * - deviceFd: file descriptor of a /dev/pts device on server side.
+ *
+ * - SIGNAL_READ_FROM_DEVICE: a signal to allow read or not from serial port
+ *
+ * - SIGNAL_WRITE_TO_DEVICE: a signal to allow read or not from serial port
+ *
+ * - cmd: command received from client throught serial virtual port
+ *
+ * - ans: answer sent from server to client through serial virtual port
+ *
+ * - regfile: stores dynamically the registers' data
  */
 volatile int deviceFd;
 volatile int SIGNAL_READ_FROM_DEVICE=TRUE;
 volatile int SIGNAL_WRITE_TO_DEVICE=FALSE; 
-volatile char buff[MAX_SIZE]="\0";
+volatile char cmd[MAX_SIZE]="\0";
 volatile char ans[MAX_SIZE]="\0";
 volatile unsigned short *regfile;
 
 
 
 
+/*
+ * Thread Sender()
+ *
+ * - Sends data through device serial port to client
+ *
+ * - Communicates with main thread through SIGNAL_WRITE_TO_DEVICE
+ *
+ * - Yields the processor if there aren't any data to write to serial port
+ */
 void *Sender() {
 	int i, nbytes;
 
@@ -23,10 +41,17 @@ void *Sender() {
 		while (SIGNAL_WRITE_TO_DEVICE==TRUE) {
 			for (i = 0; i < strlen(ans); i++) {
 				nbytes = write(deviceFd,ans+i,sizeof(char));
-				if (nbytes == -1)
-					printf("problem at write\n");
+				if (nbytes == -1) {
+					printf("problem at write. Exiting.\n");
+					exit(-1);
+				}
 			}
 			nbytes = write(deviceFd,"\n",sizeof(char));
+			if (nbytes == -1) {
+				printf("problem at write. Exiting.\n");
+				exit(-1);
+			}
+
 			SIGNAL_WRITE_TO_DEVICE=FALSE;
 		}
 		sched_yield();	
@@ -36,19 +61,28 @@ void *Sender() {
 }
 
 
+/*
+ * Thread Receiver()
+ *
+ * - Receives data from client through device serial port
+ *
+ * - Communicates with main thread through SIGNAL_READ_FROM_DEVICE
+ *
+ * - Yields the processor if there aren't any data to write to serial port
+ */
 void *Receiver(){	
 	int i,nbytes;
 	while (1) {
 		i = 0;
 		while (SIGNAL_READ_FROM_DEVICE==TRUE) {
-			nbytes = read(deviceFd, buff+i, sizeof(char) );
+			nbytes = read(deviceFd, cmd+i, sizeof(char) );
 			if (nbytes == -1)  {
-				printf("Read error at writer() function.Exiting\n");
-				return NULL;
+				printf("Read error. Exiting\n");
+				exit(-1);
     		}
-    		if (buff[i]=='\n') {
-    			buff[i]='\0';
-    			printf("command \"%s\" received.\n",buff);
+    		if (cmd[i]=='\n') {
+    			cmd[i]='\0';
+    			printf("Command \"%s\" received.\n",cmd);
     			SIGNAL_READ_FROM_DEVICE=FALSE;
     			break;
     		}
@@ -62,14 +96,23 @@ void *Receiver(){
 
 
 
-
+/*
+ * Function parseCommand()
+ *
+ * - Checks validity, interprets commands and creates answers 
+ *
+ * - Reads/Write from/to registers
+ *
+ */
 char *parseCommand(int *nregs, char *ans) {
 	int i,j, num,num_tmp;
 	char tmp2[10];
 
 
-
-	if (strcmp(buff,"add-register")==0) {
+	/*
+	 * "add-register" command
+	 */
+	if (strcmp(cmd,"add-register")==0) {
 		*nregs = *nregs + 1;
 		regfile = (unsigned short*)realloc(regfile, (*nregs)  *sizeof(unsigned short));
 		if (regfile == NULL) {
@@ -82,27 +125,27 @@ char *parseCommand(int *nregs, char *ans) {
 	}
 
 	/*
-	 *do some basic validity check
+	 * do some basic validity check
 	 */
-	if (buff[0] != 'A' || buff[1] != 'T' || buff[2] != '+' || buff[3] != 'R' || buff[4] != 'E' || buff[5] != 'G' || strlen(buff)<7 ) {
+	if (cmd[0] != 'A' || cmd[1] != 'T' || cmd[2] != '+' || cmd[3] != 'R' || cmd[4] != 'E' || cmd[5] != 'G' || strlen(cmd)<7 ) {
 		sprintf(ans,"InvalidInput");
 		return ans;
 	}
 
-
-	//all commands here start with "AT+REG"
-	//AT+REG 1 - INVALID
-	//AT+REG1 3 - INVALID 	
-
-
-	num=atoi(buff+6);
+	/*
+	 * check if digit follows
+	 */
+	num=atoi(cmd+6);
 	if (num == 0) {
 		sprintf(ans,"InvalidInput");
 	}
     else {
     	
     	i=6;
-    	//find num of digits
+
+    	/*
+    	 * find num of digits
+    	 */
     	num_tmp=num;
     	while (num_tmp != 0) {
     		num_tmp /= 10;     
@@ -110,36 +153,52 @@ char *parseCommand(int *nregs, char *ans) {
     	}
     	
 
-    	//check "=?" command
-       	if (strchr(buff,'?') != NULL && *(strchr(buff,'?')-1) != '=' ) {
-       		printf("popa\n");
+    	/*
+    	 * check for wrong typed "=?" command
+    	 */
+       	if (strchr(cmd,'?') != NULL && *(strchr(cmd,'?')-1) != '=' ) {
        		sprintf(ans,"InvalidInput");
     	}
     	else {
-    		// remove all spaces
+
+    		/*
+    		 * remove all spaces
+    		 */
 	    	j=i; 
 	    	num_tmp=i;
-	    	for (; i<strlen(buff);i++) {
-	    		if (buff[i] != ' ')
-	    			buff[j++] = buff[i];
+	    	for (; i<strlen(cmd);i++) {
+	    		if (cmd[i] != ' ')
+	    			cmd[j++] = cmd[i];
 	    	}
-	    	buff[j]='\0';
+	    	cmd[j]='\0';
 	    	i=num_tmp;
 	    	
 
-			if (buff[i]=='=') {			
-				if (buff[i+1]=='?') {//2nd command
+			if (cmd[i]=='=') {			
+				if (cmd[i+1]=='?') { 
+
+					/*
+					 * "=?" command
+					 */ 
 					sprintf(ans,"0-%hu",(unsigned short)-1);
 				}
 				else {
 					i++;
-					num_tmp=atoi(buff+i);
+					num_tmp=atoi(cmd+i);
 					sprintf(tmp2,"%d",num_tmp);	
-					if ( strcmp(buff+i,tmp2)==0 ) {
+					if ( strcmp(cmd+i,tmp2)==0 ) {
 						if (num > *nregs) {
+
+							/*
+							 * wrong Register number
+							 */
 							sprintf(ans,"Error: Register numbers must be from \"1\" to \"%d\"", *nregs);
 						}
 						else {
+
+							/*
+							 * AT+REG<num>=<num> command
+							 */
 							regfile[num-1]=num_tmp;
 							sprintf(ans,"OK");
 						}
@@ -149,10 +208,18 @@ char *parseCommand(int *nregs, char *ans) {
 					}
 				}
 			}
-			else if (buff[i]=='\0' &&  (num <= *nregs) && (num > 0) ) {
+			else if (cmd[i]=='\0' &&  (num <= *nregs) && (num > 0) ) {
+
+				/*
+				 * AT+REG<num> command
+				 */
 				sprintf(ans,"%d", regfile[num-1]);
 			}
-			else {//no digits found
+			else {
+
+				/*
+				 * no digits found
+				 */
 				sprintf(ans,"InvalidInput");
 			}
 		}
@@ -163,32 +230,55 @@ char *parseCommand(int *nregs, char *ans) {
 }
 
 
+/* function initialize_server()
+ *
+ * - Creates file descriptors for virtual serial device, eg. /dev/pts/0
+ *
+ * - Creates threads Sender and Receiver
+ *
+ * - Allocates dynamically the registers
+ *
+ */
 int initialize_server(parserT *parser) {
 	pthread_t S_tid, R_tid;
 	int i;
 	
 
-	//Open file descriptor for serial device 
+	/*
+	 * Open file descriptor for serial device 
+	 */
 	deviceFd = open( parser->endpoint, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU );
 	if (deviceFd == -1 )  {
 		printf("Error opening output file. Exiting\n");
-		return -1;
+		exit(-1);
 	}
 
 
-	//Create Senders's thread
+	/*
+	 * Create Senders's thread
+	 */
 	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
-		return -1;
+		exit(-1);
 	}
 
-	//Create Receiver's thread
+	/*
+	 * Create Receiver's thread
+	 */
 	if (pthread_create( &R_tid,NULL, (void *)Receiver, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
-		return -1;
+		exit(-1);
 	}
 
+	
+	/*
+	 * Allocate registers dynamically and initialize them randomly
+	 */
 	regfile = (unsigned short *)malloc( parser->nregs*sizeof(unsigned short) );
+	if (regfile==NULL) {
+		printf("Error allocating memory. Exiting\n");
+		exit(-1)
+	}
 	for (i=0; i < parser->nregs; i++) {
 		regfile[i]= rand()%10;
 	}
@@ -199,8 +289,15 @@ int initialize_server(parserT *parser) {
 
 
 
-
-
+/* function run_server()
+ *
+ * - gives signals to threads Sender,Receiver when to read/write from serial port
+ *
+ * - parses the command received from client
+ *
+ * - yields the processor when no need
+ *
+ */
 int run_server(parserT *parser)  {
 	
 	while (1) {
@@ -224,6 +321,13 @@ int run_server(parserT *parser)  {
 
 }
 
+
+/* function close_server()
+ * 
+ * - closes serial's port file descriptor
+ *
+ * - frees dynamically allocated memory for registers
+ */
 int close_server() {
 	if (close(deviceFd) < 0) {
 		printf("error closing server endpoint. Exiting\n");
