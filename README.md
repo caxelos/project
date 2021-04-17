@@ -3,7 +3,7 @@
 
 ## Compile
 
-* To compile the project, open a terminal and type `cmake .` in **evaluation_axelos** directory.
+* To compile the project, open a terminal and type `cmake .` in  "evaluation_axelos" directory.
 
 * Then, type  `make`.
 
@@ -19,15 +19,15 @@ $ socat -d -d pty,rawer,link=/dev/ttyS0 PTY,rawer,link=/dev/ttyS1
 2021/04/17 19:25:58 socat[4313] N PTY is /dev/pts/10
 2021/04/17 19:25:58 socat[4313] N starting data transfer loop with FDs [5,5] and [7,7]
 ```
-* Now open a **second** terminal in the same directory and run server as follows. /dev/pts/1 is taken from the previous command's output.
+* Now open a **second** terminal in the same directory and run server as follows. **/dev/pts/1** is taken from the previous command's output.
 ```
 ./server -nregs 5 -endpoint /dev/pts/1
 
 ```
 
-* Then, open a **third** terminal in the same directory and run client as follows. /dev/pts/10 is taken from the previous command's output.
+* Then, open a **third** terminal in the same directory and run client as follows. **/dev/pts/10** is taken from the previous command's output.
 ```
-./server -nregs 5 -endpoint /dev/pts/10
+./client -endpoint /dev/pts/10
 
 ```
 * Finally, the client is ready to interact with the server.
