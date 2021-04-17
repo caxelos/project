@@ -2,23 +2,35 @@
 #include <clientMW.h>
 
 volatile int SIGNAL_READ_FROM_ENDPOINT=FALSE;
+volatile int SIGNAL_WRITE_TO_ENDPOINT=FALSE;
 volatile int client_endpoint;
 volatile char ans[MSG_SIZE]="\0";
+volatile char cmd[MSG_SIZE]="\0";
 
 void *Sender() {
-	return NULL;
+	int i,nbytes;
 
+	while (1) {
+		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+			for (i = 0; i < strlen(cmd); i++) {
+				nbytes = write(client_endpoint,cmd+i,sizeof(char));
+				if (nbytes == -1) {
+					printf("problem at write");
+				}
+			}
+			nbytes = write(client_endpoint,"\n",sizeof(char));
+			SIGNAL_WRITE_TO_ENDPOINT=FALSE;
+		}
+		sched_yield();
+	}
+
+	return NULL;
 }
 
 
 void *Receiver(){
 	int i,nbytes=0;	
 	i=0;
-
-
-	if (read(client_endpoint, ans+i, sizeof(char)==0))
-		printf("cleared ok!\n");
-
 
 	while (1) {
 		i = 0;
@@ -57,9 +69,6 @@ void printATcommands(void) {
 
 
 int run_client() {
-	char cmd[100];
-	int i,nbytes;
-
 
 	printf("Welcome to the app.\n");
 	while (1) {
@@ -70,24 +79,18 @@ int run_client() {
 			continue;
 		}
 
-		for (i = 0; i < strlen(cmd); i++) {
-			nbytes = write(client_endpoint,cmd+i,sizeof(char));
-			if (nbytes == -1) {
-				printf("problem at write");
-			}
+		SIGNAL_WRITE_TO_ENDPOINT=TRUE;		
+		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+			sched_yield();
 		}
-		nbytes = write(client_endpoint,"\n",sizeof(char));
 		SIGNAL_READ_FROM_ENDPOINT=TRUE;
+		
 
-		while (1) {
-			if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
-				printf("%s\n",ans);
-				break;
-			}
-			else {
-				sched_yield();		
-			}
+		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
+			sched_yield();
 		}
+		printf("%s\n",ans);
+	
 	}
 
 	return 0;
@@ -95,14 +98,8 @@ int run_client() {
 
 
 int initialize_client(char *argv[]) {
-	pthread_t R_tid;
+	pthread_t S_tid,R_tid;
 
-
-	client_endpoint = open( argv[1], O_RDWR | O_CREAT, S_IRWXU );
-	if (client_endpoint == -1 )  {
-		printf("Error opening output file. Exiting\n");
-		exit(-1);
-	}
 
 	if (access(argv[1], X_OK)==0) {
 		if (truncate(client_endpoint,0)==-1) {
@@ -112,12 +109,18 @@ int initialize_client(char *argv[]) {
 	}
 
 
+	client_endpoint = open( argv[1], O_RDWR | O_CREAT, S_IRWXU );
+	if (client_endpoint == -1 )  {
+		printf("Error opening output file. Exiting\n");
+		exit(-1);
+	}
+
 
 	//Create sender's thread
-	// if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
-	// 	printf("Error creating thread. Exiting\n");
-	// 	return -1;
-	// }
+	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
+		printf("Error creating thread. Exiting\n");
+		return -1;
+	}
 
 	//Create Receiver's thread
 	if (pthread_create( &R_tid,NULL, (void *)Receiver, NULL) != 0) {

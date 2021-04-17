@@ -1,23 +1,19 @@
 #include <serverMW.h>
 
-
 volatile int server_endpoint;
 volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE;
 volatile int SIGNAL_WRITE_TO_ENDPOINT=FALSE; 
 volatile char buff[MAX_SIZE]="\0";
 volatile char ans[MAX_SIZE]="\0";
-unsigned short *regs;
+volatile unsigned short *regs;
 
 
 void *Sender() {
 	int i, nbytes;
 
 	while (1) {
-		i = 0;
 		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
-			printf("ans:%s\n",ans);
 			for (i = 0; i < strlen(ans); i++) {
-				printf("char:%c\n",ans[i]);
 				nbytes = write(server_endpoint,ans+i,sizeof(char));
 				if (nbytes == -1)
 					printf("problem at write\n");
@@ -25,8 +21,7 @@ void *Sender() {
 			nbytes = write(server_endpoint,"\n",sizeof(char));
 			SIGNAL_WRITE_TO_ENDPOINT=FALSE;
 		}
-		sched_yield();
-		
+		sched_yield();	
 	}
 
 	return NULL; 

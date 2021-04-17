@@ -10,7 +10,11 @@
 #define FALSE 0
 #define MSG_SIZE 100
 
+
+void *Sender();
 void *Receiver();
+
+
 int initialize_client(char *argv[]);
 int run_client();
 void printATcommands();
