@@ -17,7 +17,7 @@ void *Receiver();
 
 int initialize_server(parserT *parser);
 int run_server(parserT *parser);
-char *parseCommand(int *nregs, unsigned short *regs, char *ans);
+char *parseCommand(int *nregs, char *ans);
 int close_server();
 
 

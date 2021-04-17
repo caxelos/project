@@ -1,8 +1,8 @@
 #include <clientMW.h>
 
-volatile int SIGNAL_READ_FROM_ENDPOINT=FALSE;
-volatile int SIGNAL_WRITE_TO_ENDPOINT=FALSE;
-volatile int client_endpoint;
+volatile int SIGNAL_READ_FROM_DEVICE=FALSE;
+volatile int SIGNAL_WRITE_TO_DEVICE=FALSE;
+volatile int deviceFd;
 volatile char ans[MSG_SIZE]="\0";
 volatile char cmd[MSG_SIZE]="\0";
 
@@ -11,15 +11,14 @@ void *Sender() {
 	int i,nbytes;
 
 	while (1) {
-		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+		while (SIGNAL_WRITE_TO_DEVICE==TRUE) {
 			for (i = 0; i < strlen(cmd); i++) {
-				nbytes = write(client_endpoint,cmd+i,sizeof(char));
+				nbytes = write(deviceFd,cmd+i,sizeof(char));
 				if (nbytes == -1) {
 					printf("problem at write");
 				}
 			}
-			nbytes = write(client_endpoint,"\n",sizeof(char));
-			SIGNAL_WRITE_TO_ENDPOINT=FALSE;
+			SIGNAL_WRITE_TO_DEVICE=FALSE;
 		}
 		sched_yield();
 	}
@@ -34,17 +33,16 @@ void *Receiver(){
 
 	while (1) {
 		i = 0;
-		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
-			nbytes = read(client_endpoint, ans+i, sizeof(char) );
+		while (SIGNAL_READ_FROM_DEVICE==TRUE) {
+			nbytes = read(deviceFd, ans+i, sizeof(char) );
 			if (nbytes == -1)  {
 				printf("Read error at writer() function.Exiting\n");
 				return NULL;
     		}
     		if (ans[i]=='\n') {
     			ans[i]='\0';
-    			printf("received:%s\n",ans);
     			i=0;
-    			SIGNAL_READ_FROM_ENDPOINT=FALSE;
+    			SIGNAL_READ_FROM_DEVICE=FALSE;
     		}
     		else {
     			i++;
@@ -74,19 +72,19 @@ int run_client() {
 	while (1) {
 
 		printf("~  ");
-		scanf("%s", cmd);
+		fgets (cmd, MSG_SIZE , stdin);
 		if (strcmp(cmd,"help") == 0) {
 			printATcommands();
 			continue;
 		}
 
-		SIGNAL_WRITE_TO_ENDPOINT=TRUE;		
-		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+		SIGNAL_WRITE_TO_DEVICE=TRUE;		
+		while (SIGNAL_WRITE_TO_DEVICE==TRUE) {
 			sched_yield();
 		}
 
-		SIGNAL_READ_FROM_ENDPOINT=TRUE;
-		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
+		SIGNAL_READ_FROM_DEVICE=TRUE;
+		while (SIGNAL_READ_FROM_DEVICE==TRUE) {
 			sched_yield();
 		}
 		printf("%s\n",ans);
@@ -101,20 +99,14 @@ int run_client() {
 int initialize_client(parserT *parser) {
 	pthread_t S_tid,R_tid;
 
-
-
-	// if (access(parser->endpoint, X_OK)==0) {
-	// 	if (truncate(parser->endpoint,0)==-1) {
-	// 		printf("error clearing %s device. Exiting\n", parser->endpoint );
-	// 		exit(-1);
-	// 	}
-	// }
-
-	client_endpoint = open( parser->endpoint, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU );
-	if (client_endpoint == -1 )  {
+	//Open file descriptor for serial device 
+	deviceFd = open( parser->endpoint, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU );
+	if (deviceFd == -1 )  {
 		printf("Error opening output file. Exiting\n");
 		exit(-1);
 	}	
+
+
 	//Create sender's thread
 	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
@@ -132,7 +124,7 @@ int initialize_client(parserT *parser) {
 
 
 int close_client() {
-	if (close(client_endpoint) < 0) {
+	if (close(deviceFd) < 0) {
 		printf("error closing server endpoint. Exiting\n");
 		return -1;
 	}
