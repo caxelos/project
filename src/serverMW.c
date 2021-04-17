@@ -4,12 +4,15 @@
 volatile int server_endpoint;
 volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE; 
 volatile char buff[100]="\0";
+unsigned short *regs;
 
 
-void *Sender() {
 
-	return NULL; 
-}
+// void *Sender() {
+
+// 	return NULL; 
+// }
+
 
 void *Receiver(){	
 	int i,nbytes;
@@ -121,8 +124,8 @@ char *parseCommand(int *nregs, unsigned short *regs, char *ans) {
 
 
 int initialize_server(parserT *parser) {
-	pthread_t S_tid, R_tid;
-
+	pthread_t R_tid;
+	int i;
 	/*
 	 * INITIALIZATIONS
 	 */
@@ -138,6 +141,11 @@ int initialize_server(parserT *parser) {
 	if (pthread_create( &R_tid,NULL, (void *)Receiver, NULL) != 0) {
 		printf("Error creating thread. Exiting\n");
 		return -1;
+	}
+
+	regs = (unsigned short *)malloc( parser->nregs*sizeof(unsigned short) );
+	for (i=0; i < parser->nregs; i++) {
+		regs[i]= rand()%10;
 	}
 
 	return 0;
@@ -172,6 +180,42 @@ int parseArgs( parserT *parser, int argc, char *argv[]) {
 		printf("Error. \"-endpoint\" argument missing (e.g. -endpoint /dev/pts1).\n");
 		return -1;
 	}
+
+	return 0;
+}
+
+
+int run_server(parserT *parser)  {
+	char ans[50];
+	int i, nbytes;
+
+
+	while (1) {
+		if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
+			parseCommand( &(parser->nregs), regs, ans);
+			for (i = 0; i < strlen(ans); i++) {
+				nbytes = write(server_endpoint,ans+i,sizeof(char));
+				if (nbytes == -1)
+					printf("problem at write\n");
+			}
+			nbytes = write(server_endpoint,"\n",sizeof(char));
+			SIGNAL_READ_FROM_ENDPOINT=TRUE;
+		}
+		else {
+			sched_yield();
+		}
+	}
+
+	return 0;
+
+}
+
+int close_server() {
+	if (close(server_endpoint) < 0) {
+		printf("error closing server endpoint. Exiting\n");
+		return -1;
+	}
+	free( regs );
 
 	return 0;
 }

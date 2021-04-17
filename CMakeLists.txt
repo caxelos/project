@@ -4,14 +4,13 @@ project  (evaluation)
 
 set ( CMAKE_C_FLAGS "-Wall -g")
 
-set(HEADER_FILES include/serverMW.h)
-
 include_directories(include)
 
-file(GLOB SOURCES "src/*.c")
+set(SERVER_SOURCES src/server.c src/serverMW.c )
+set(CLIENT_SOURCES src/client.c src/clientMW.c)
 
-add_executable(server ${SOURCES} ${HEADER_FILES} )
-add_executable(client src/client.c)
+add_executable(server ${SERVER_SOURCES} )
+add_executable(client ${CLIENT_SOURCES})
 
 target_link_libraries(server -lpthread)
 target_link_libraries(client -lpthread)

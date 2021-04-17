@@ -7,8 +7,10 @@
 #include <sched.h>
 #include <ctype.h>
 
+#define _UNIX03_SOURCE
 #define TRUE 1
 #define FALSE 0
+#define MAX_SIZE 20
 
 
 struct parser {
@@ -18,8 +20,14 @@ struct parser {
 typedef struct parser parserT;
 
 
+int parseArgs( parserT *parser, int argc, char *argv[]);
+int initialize_server(parserT *parser);
+void *Receiver();
+int run_server(parserT *parser);
 char *parseCommand(int *nregs, unsigned short *regs, char *ans);
-int parseArgs(parserT *parser, int argc, char *argv[]);
+int close_server();
+
+
 
 
 
