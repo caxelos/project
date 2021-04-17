@@ -10,7 +10,7 @@
 #define _UNIX03_SOURCE
 #define TRUE 1
 #define FALSE 0
-#define MAX_SIZE 20
+#define MAX_SIZE 100
 
 
 struct parser {
@@ -20,9 +20,12 @@ struct parser {
 typedef struct parser parserT;
 
 
+void *Sender();
+void *Receiver();
+
+
 int parseArgs( parserT *parser, int argc, char *argv[]);
 int initialize_server(parserT *parser);
-void *Receiver();
 int run_server(parserT *parser);
 char *parseCommand(int *nregs, unsigned short *regs, char *ans);
 int close_server();

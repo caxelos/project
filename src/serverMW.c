@@ -2,16 +2,35 @@
 
 
 volatile int server_endpoint;
-volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE; 
-volatile char buff[100]="\0";
+volatile int SIGNAL_READ_FROM_ENDPOINT=TRUE;
+volatile int SIGNAL_WRITE_TO_ENDPOINT=FALSE; 
+volatile char buff[MAX_SIZE]="\0";
+volatile char ans[MAX_SIZE]="\0";
 unsigned short *regs;
 
 
+void *Sender() {
+	int i, nbytes;
 
-// void *Sender() {
+	while (1) {
+		i = 0;
+		while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+			printf("ans:%s\n",ans);
+			for (i = 0; i < strlen(ans); i++) {
+				printf("char:%c\n",ans[i]);
+				nbytes = write(server_endpoint,ans+i,sizeof(char));
+				if (nbytes == -1)
+					printf("problem at write\n");
+			}
+			nbytes = write(server_endpoint,"\n",sizeof(char));
+			SIGNAL_WRITE_TO_ENDPOINT=FALSE;
+		}
+		sched_yield();
+		
+	}
 
-// 	return NULL; 
-// }
+	return NULL; 
+}
 
 
 void *Receiver(){	
@@ -26,7 +45,7 @@ void *Receiver(){
     		}
     		if (buff[i]=='\n') {
     			buff[i]='\0';
-    			printf("MESSAGE RECEIVED: %s\n",buff);
+    			printf("command \"%s\" received.\n",buff);
     			SIGNAL_READ_FROM_ENDPOINT=FALSE;
     			break;
     		}
@@ -124,11 +143,21 @@ char *parseCommand(int *nregs, unsigned short *regs, char *ans) {
 
 
 int initialize_server(parserT *parser) {
-	pthread_t R_tid;
+	pthread_t S_tid, R_tid;
 	int i;
+	
 	/*
 	 * INITIALIZATIONS
 	 */
+
+	if (access(parser->endpoint, X_OK)==0) {
+		if (truncate(server_endpoint,0)==-1) {
+			printf("error clearing %s device. Exiting\n", parser->endpoint );
+			exit(-1);
+		}
+	}
+
+
 	server_endpoint = open( parser->endpoint, O_RDWR | O_CREAT, S_IRWXU );
 	if (server_endpoint == -1 )  {
 		printf("Error opening output file. Exiting\n");
@@ -136,6 +165,14 @@ int initialize_server(parserT *parser) {
 	}
 
 
+	
+
+
+	//Create Senders's thread
+	if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
+		printf("Error creating thread. Exiting\n");
+		return -1;
+	}
 
 	//Create Receiver's thread
 	if (pthread_create( &R_tid,NULL, (void *)Receiver, NULL) != 0) {
@@ -186,25 +223,23 @@ int parseArgs( parserT *parser, int argc, char *argv[]) {
 
 
 int run_server(parserT *parser)  {
-	char ans[50];
-	int i, nbytes;
-
-
+	
 	while (1) {
 		if (SIGNAL_READ_FROM_ENDPOINT==FALSE) {
 			parseCommand( &(parser->nregs), regs, ans);
-			for (i = 0; i < strlen(ans); i++) {
-				nbytes = write(server_endpoint,ans+i,sizeof(char));
-				if (nbytes == -1)
-					printf("problem at write\n");
+			SIGNAL_WRITE_TO_ENDPOINT=TRUE;
+
+			while (SIGNAL_WRITE_TO_ENDPOINT==TRUE) {
+				sched_yield();
 			}
-			nbytes = write(server_endpoint,"\n",sizeof(char));
 			SIGNAL_READ_FROM_ENDPOINT=TRUE;
 		}
 		else {
 			sched_yield();
 		}
 	}
+	
+	
 
 	return 0;
 

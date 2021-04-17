@@ -12,8 +12,14 @@ void *Sender() {
 
 
 void *Receiver(){
-	int i,nbytes;	
+	int i,nbytes=0;	
 	i=0;
+
+
+	if (read(client_endpoint, ans+i, sizeof(char)==0))
+		printf("cleared ok!\n");
+
+
 	while (1) {
 		i = 0;
 		while (SIGNAL_READ_FROM_ENDPOINT==TRUE) {
@@ -25,6 +31,7 @@ void *Receiver(){
     		if (ans[i]=='\n') {
     			ans[i]='\0';
     			i=0;
+    			printf("received:%s\n",ans);
     			SIGNAL_READ_FROM_ENDPOINT=FALSE;
     		}
     		else {
@@ -94,8 +101,17 @@ int initialize_client(char *argv[]) {
 	client_endpoint = open( argv[1], O_RDWR | O_CREAT, S_IRWXU );
 	if (client_endpoint == -1 )  {
 		printf("Error opening output file. Exiting\n");
-		return -1;
+		exit(-1);
 	}
+
+	if (access(argv[1], X_OK)==0) {
+		if (truncate(client_endpoint,0)==-1) {
+			printf("error clearing %s device. Exiting\n", argv[1] );
+			exit(-1);
+		}
+	}
+
+
 
 	//Create sender's thread
 	// if (pthread_create( &S_tid,NULL, (void *)Sender, NULL) != 0) {
