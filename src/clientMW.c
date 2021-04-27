@@ -118,15 +118,17 @@ void printATcommands(void) {
  */
 int run_client() {
 
-	printf("Welcome to the app.\n");
+	printf("Welcome to the app.\nTo terminate, press \"exit\".\n\n");
 	while (1) {
 
 		printf("~  ");
 		fgets (cmd, MSG_SIZE , stdin);
-		if (strcmp(cmd,"help") == 0) {
+		if (strncmp(cmd,"help",4) == 0) {
 			printATcommands();
 			continue;
 		}
+		else if ( strncmp(cmd,"exit",4)==0)
+			break;
 
 		SIGNAL_WRITE_TO_DEVICE=TRUE;		
 		while (SIGNAL_WRITE_TO_DEVICE==TRUE) {

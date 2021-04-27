@@ -277,7 +277,7 @@ int initialize_server(parserT *parser) {
 	regfile = (unsigned short *)malloc( parser->nregs*sizeof(unsigned short) );
 	if (regfile==NULL) {
 		printf("Error allocating memory. Exiting\n");
-		exit(-1)
+		exit(-1);
 	}
 	for (i=0; i < parser->nregs; i++) {
 		regfile[i]= rand()%10;
