@@ -1,4 +1,14 @@
-#Server/Client serial communication using SOCAT emulation SW - CHRISTOS AXELOS
+#Server/Client serial communication using SOCAT  - CHRISTOS AXELOS
+
+<img width="385" height="224" alt="serial-port-comm-arch" src="https://github.com/user-attachments/assets/d48bed7f-33e9-47a0-9e53-6cb4c5a4e8b9" />
+
+## What does it achieve
+* This project contains 2 apps, one AT-Command server based app and one AT-Command client based app, that communicate via a serial port connection.
+* The server waits for commands and sends back the appropriate responses
+* The serial port is emulated using a virtual serial port (pts). In our case, "SOCAT" tool is selected to achieve the emulation.
+* The read/write is done in tty-like formatting and the exchanged payload is ASCII string. 
+* Requirements: Any Linux distro, CMake
+* To compile the project, open a terminal and type `cmake .` in  "evaluation_axelos" directory.
 
 
 ## Compile
