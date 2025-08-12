@@ -1,4 +1,4 @@
-# Evaluation Project: Server/Client serial communication - CHRISTOS AXELOS
+#Server/Client serial communication using SOCAT emulation SW - CHRISTOS AXELOS
 
 
 ## Compile
